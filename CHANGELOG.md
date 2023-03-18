@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file. See [standa
 ## [2.34.0](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/compare/v2.14.0...v2.34.0) (2023-03-18)
 
 
+
 ### Features
 
 * **aws-apigateway-*:** add optional request templates for non-default content-types. ([#888](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/issues/888)) ([ace70f0](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/commit/ace70f0ff9efed0cd1cdf46cabd8fa2e9f0e1bcc))
