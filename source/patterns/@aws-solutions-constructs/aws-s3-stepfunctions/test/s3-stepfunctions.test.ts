@@ -15,7 +15,6 @@ import { S3ToStepfunctions, S3ToStepfunctionsProps } from '../lib/index';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as cdk from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
-import { Template } from 'aws-cdk-lib/assertions';
 
 function deployNewStateMachine(stack: cdk.Stack) {
 

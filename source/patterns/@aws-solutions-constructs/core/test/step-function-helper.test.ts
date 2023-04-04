@@ -12,13 +12,14 @@
  */
 
 // Imports
-import { Stack, Aws } from "aws-cdk-lib";
+import { Stack } from "aws-cdk-lib";
 import * as defaults from '../';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import { buildLogGroup } from '../lib/cloudwatch-log-group-helper';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import { Template } from 'aws-cdk-lib/assertions';
 
+// --------------------------------------------------------------
+// Test deployment w/ custom properties
+// --------------------------------------------------------------
 test('Test deployment w/ custom properties', () => {
   // Stack
   const stack = new Stack();
@@ -34,11 +35,15 @@ test('Test deployment w/ custom properties', () => {
   const template = Template.fromStack(stack);
   template.resourceCountIs("AWS::Logs::LogGroup", 1);
 
+
   template.hasResourceProperties("AWS::StepFunctions::StateMachine", {
     StateMachineName: "myStateMachine"
   });
 });
 
+// --------------------------------------------------------------
+// Test deployment w/ logging enabled
+// --------------------------------------------------------------
 test('Test deployment w/ logging enabled', () => {
   // Stack
   const stack = new Stack();
@@ -79,6 +84,9 @@ test('Test deployment w/ logging enabled', () => {
   });
 });
 
+// --------------------------------------------------------------
+// Check default Cloudwatch permissions
+// --------------------------------------------------------------
 test('Check default Cloudwatch permissions', () => {
   // Stack
   const stack = new Stack();
@@ -139,6 +147,9 @@ test('Check default Cloudwatch permissions', () => {
   });
 });
 
+// --------------------------------------------------------------
+// Check CW Alarms
+// --------------------------------------------------------------
 test('Count State Machine CW Alarms', () => {
   // Stack
   const stack = new Stack();

@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 Test Release
 
+
 ### Features
 
 * **aws-apigateway-*:** add optional request templates for non-default content-types. ([#888](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/issues/888)) ([ace70f0](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/commit/ace70f0ff9efed0cd1cdf46cabd8fa2e9f0e1bcc))
@@ -48,6 +49,7 @@ Built on CDK v2.68.0
 ### Bug Fixes
 
 * **StepFunctions:** Address LogGroup behavior problems ([#922](https://github.com/awslabs/aws-solutions-constructs/issues/922)) ([84e581c](https://github.com/awslabs/aws-solutions-constructs/commit/84e581cad10f59daf827fb6e8f8101e1ec6b11f3))
+
 
 ## [2.33.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.32.0...v2.33.0) (2023-03-03)
 

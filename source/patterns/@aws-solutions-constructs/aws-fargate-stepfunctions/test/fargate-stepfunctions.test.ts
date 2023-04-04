@@ -17,7 +17,6 @@ import { FargateToStepfunctions } from "../lib";
 import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { Template } from 'aws-cdk-lib/assertions';
 
 const clusterName = "custom-cluster-name";
 const containerName = "custom-container-name";

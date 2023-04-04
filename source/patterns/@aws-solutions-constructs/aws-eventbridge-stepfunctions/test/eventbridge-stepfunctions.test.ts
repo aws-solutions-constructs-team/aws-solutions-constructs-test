@@ -16,7 +16,6 @@ import { EventbridgeToStepfunctions, EventbridgeToStepfunctionsProps } from '../
 import { Duration } from 'aws-cdk-lib';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as cdk from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
 
 function deployNewStateMachine(stack: cdk.Stack) {
 
