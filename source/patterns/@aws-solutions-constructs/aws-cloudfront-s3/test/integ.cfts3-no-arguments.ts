@@ -15,6 +15,7 @@
 import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { CloudFrontToS3 } from "../lib";
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as defaults from '@aws-solutions-constructs/core';
 
@@ -32,7 +33,14 @@ const construct = new CloudFrontToS3(stack, 'test-cloudfront-s3', {
     removalPolicy: RemovalPolicy.DESTROY,
     autoDeleteObjects: true
   },
-  logS3AccessLogs: false
+  loggingBucketProps: {
+    removalPolicy: RemovalPolicy.DESTROY,
+    autoDeleteObjects: true
+  },
+  cloudFrontLoggingBucketAccessLogBucketProps: {
+    removalPolicy: RemovalPolicy.DESTROY,
+    autoDeleteObjects: true
+  },
 });
 
 const s3Bucket = construct.s3Bucket as s3.Bucket;
@@ -42,6 +50,8 @@ defaults.addCfnSuppressRules(s3Bucket, [
     reason: 'This S3 bucket is created for unit/ integration testing purposes only.' },
 ]);
 
-defaults.suppressAutoDeleteHandlerWarnings(stack);
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

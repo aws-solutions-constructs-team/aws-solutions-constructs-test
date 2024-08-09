@@ -11,7 +11,6 @@
  *  and limitations under the License.
  */
 
-import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -20,7 +19,11 @@ import { Aws, CustomResource } from 'aws-cdk-lib';
 import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as path from 'path';
 import { Provider } from "aws-cdk-lib/custom-resources";
-import { addCfnSuppressRules, buildLambdaFunction } from "@aws-solutions-constructs/core";
+import { buildLambdaFunction } from "@aws-solutions-constructs/core";
+import { addCfnSuppressRulesForCustomResourceProvider } from "./utils";
+// Note: To ensure CDKv2 compatibility, keep the import statement for Construct separate
+import { Construct } from 'constructs';
+import * as defaults from '@aws-solutions-constructs/core';
 
 /**
  * The TemplateValue interface defines the id-value pair that will
@@ -95,70 +98,36 @@ export function createTemplateWriterCustomResource(
 
   const templateWriterLambda = buildLambdaFunction(scope, {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/template-writer-custom-resource`),
       timeout: props.timeout,
       memorySize: props.memorySize,
-      role: new iam.Role(scope, `${id}TemplateWriterLambdaRole`, {
-        assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-        description: 'Role used by the TemplateWriterLambda to transform the incoming asset',
-        inlinePolicies: {
-          CloudWatchLogsPolicy: new iam.PolicyDocument({
-            statements: [
-              new iam.PolicyStatement({
-                actions: [
-                  'logs:CreateLogGroup',
-                  'logs:CreateLogStream',
-                  'logs:PutLogEvents'
-                ],
-                resources: [ `arn:${Aws.PARTITION}:logs:${Aws.REGION}:${Aws.ACCOUNT_ID}:log-group:/aws/lambda/*` ]
-              })
-            ]
-          }),
-          ReadInputAssetPolicy: new iam.PolicyDocument({
-            statements: [
-              new iam.PolicyStatement({
-                actions: [ 's3:GetObject' ],
-                effect: iam.Effect.ALLOW,
-                resources: [ `arn:${Aws.PARTITION}:s3:::${props.templateBucket.bucketName}/${props.templateKey}`]
-              })
-            ]
-          }),
-          WriteOutputAssetPolicy: new iam.PolicyDocument({
-            statements: [
-              new iam.PolicyStatement({
-                actions: [ 's3:PutObject' ],
-                effect: iam.Effect.ALLOW,
-                resources: [ `arn:${Aws.PARTITION}:s3:::${outputAsset.s3BucketName}/*`]
-              })
-            ]
-          })
-        }
-      })
     }
   });
+
+  const templateWriterPolicy = new iam.Policy(scope, `${id}TemplateWriterPolicy`, {
+    statements: [
+      new iam.PolicyStatement({
+        actions: [ 's3:GetObject' ],
+        effect: iam.Effect.ALLOW,
+        resources: [ `arn:${Aws.PARTITION}:s3:::${props.templateBucket.bucketName}/${props.templateKey}`]
+      }),
+      new iam.PolicyStatement({
+        actions: [ 's3:PutObject' ],
+        effect: iam.Effect.ALLOW,
+        resources: [ `arn:${Aws.PARTITION}:s3:::${outputAsset.s3BucketName}/*`]
+      })
+    ]
+  });
+
+  templateWriterLambda.role?.attachInlinePolicy(templateWriterPolicy);
 
   const templateWriterProvider = new Provider(scope, `${id}TemplateWriterProvider`, {
     onEventHandler: templateWriterLambda
   });
 
-  const providerFrameworkFunction = templateWriterProvider.node.children[0].node.findChild('Resource') as lambda.CfnFunction;
-
-  addCfnSuppressRules(providerFrameworkFunction, [
-    {
-      id: 'W58',
-      reason: `The CDK-provided lambda function that backs their Custom Resource Provider framework has an IAM role with the arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole Managed Policy attached, which grants permission to write to CloudWatch Logs`
-    },
-    {
-      id: 'W89',
-      reason: `The CDK-provided lambda function that backs their Custom Resource Provider framework does not access VPC resources`
-    },
-    {
-      id: 'W92',
-      reason: `The CDK-provided lambda function that backs their Custom Resource Provider framework does not define ReservedConcurrentExecutions`
-    }
-  ]);
+  addCfnSuppressRulesForCustomResourceProvider(templateWriterProvider);
 
   const customResource = new CustomResource(scope, `${id}TemplateWriterCustomResource`, {
     resourceType: 'Custom::TemplateWriter',
@@ -170,6 +139,8 @@ export function createTemplateWriterCustomResource(
       TemplateOutputBucket: outputAsset.s3BucketName
     }
   });
+
+  customResource.node.addDependency(templateWriterPolicy);
 
   return {
     s3Bucket: outputAsset.bucket,

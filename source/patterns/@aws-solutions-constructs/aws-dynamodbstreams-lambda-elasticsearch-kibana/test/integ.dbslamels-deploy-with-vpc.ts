@@ -15,7 +15,9 @@
 import { App, Stack } from "aws-cdk-lib";
 import { DynamoDBStreamsToLambdaToElasticSearchAndKibanaProps, DynamoDBStreamsToLambdaToElasticSearchAndKibana } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, CreateShortUniqueTestName, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 const app = new App();
 
@@ -25,13 +27,18 @@ const stack = new Stack(app, generateIntegStackName(__filename));
 const props: DynamoDBStreamsToLambdaToElasticSearchAndKibanaProps = {
   lambdaFunctionProps: {
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler'
   },
-  domainName: 'domaintest-1234',
-  cognitoDomainName: 'pooldomaintest-2342',
+  domainName: CreateShortUniqueTestName("dmn"),
+  cognitoDomainName: CreateShortUniqueTestName("cog"),
   deployVpc: true
 };
 
 new DynamoDBStreamsToLambdaToElasticSearchAndKibana(stack, 'test-ddbstreams-lambda-esk', props);
-app.synth();
+
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
+
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

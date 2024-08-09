@@ -15,6 +15,7 @@
 import { App, RemovalPolicy, Stack } from "aws-cdk-lib";
 import { IotToS3, IotToS3Props } from "../lib";
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import * as defaults from '@aws-solutions-constructs/core';
 
 const app = new App();
@@ -29,17 +30,18 @@ const props: IotToS3Props = {
       actions: []
     }
   },
-  logS3AccessLogs: false,
   bucketProps: {
     removalPolicy: RemovalPolicy.DESTROY,
+  },
+  loggingBucketProps: {
+    removalPolicy: RemovalPolicy.DESTROY,
+    autoDeleteObjects: true
   }
 };
 
-const testConstruct = new IotToS3(stack, 'test-iot-s3-integration', props);
+new IotToS3(stack, 'test-iot-s3-integration', props);
 
-defaults.addCfnSuppressRules(testConstruct.s3Bucket!, [
-  { id: 'W35',
-    reason: 'This S3 bucket is created for unit/ integration testing purposes only.' },
-]);
-
-app.synth();
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

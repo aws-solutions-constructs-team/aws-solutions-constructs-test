@@ -15,7 +15,10 @@
 import { App, RemovalPolicy, Stack } from "aws-cdk-lib";
 import { CloudFrontToApiGatewayToLambda } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { generateIntegStackName, suppressAutoDeleteHandlerWarnings } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, suppressCustomHandlerCfnNagWarnings, CreateApiAuthorizer } from '@aws-solutions-constructs/core';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 // Setup
 const app = new App();
@@ -24,11 +27,17 @@ stack.templateOptions.description = 'Integration Test for aws-cloudfront-apigate
 
 const lambdaProps: lambda.FunctionProps = {
   code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler'
 };
 
 new CloudFrontToApiGatewayToLambda(stack, 'test-cloudfront-apigateway-lambda', {
+  apiGatewayProps: {
+    defaultMethodOptions: {
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+      authorizer: CreateApiAuthorizer(stack, `${generateIntegStackName(__filename)}-authorizer`)
+    },
+  },
   lambdaFunctionProps: lambdaProps,
   cloudFrontLoggingBucketProps: {
     removalPolicy: RemovalPolicy.DESTROY,
@@ -36,6 +45,8 @@ new CloudFrontToApiGatewayToLambda(stack, 'test-cloudfront-apigateway-lambda', {
   },
 });
 
-suppressAutoDeleteHandlerWarnings(stack);
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

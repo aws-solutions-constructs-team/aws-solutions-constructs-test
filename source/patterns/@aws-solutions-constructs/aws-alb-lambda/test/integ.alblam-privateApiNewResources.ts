@@ -15,6 +15,7 @@
 import { Aws, App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { AlbToLambda, AlbToLambdaProps } from "../lib";
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
 import { CfnSecurityGroup } from "aws-cdk-lib/aws-ec2";
@@ -33,7 +34,7 @@ stack.templateOptions.description = 'Integration Test for HTTP API with a new fu
 const props: AlbToLambdaProps = {
   lambdaFunctionProps: {
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler'
   },
   listenerProps: {
@@ -58,6 +59,10 @@ defaults.addCfnSuppressRules(newSecurityGroup, [
   { id: 'W9', reason: 'Rule does not apply for ELB.'}
 ]);
 
-defaults.suppressAutoDeleteHandlerWarnings(stack);
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
+
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

@@ -14,11 +14,12 @@
 // Imports
 import { Construct, IConstruct } from 'constructs';
 import { Bucket, BucketProps, BucketEncryption } from "aws-cdk-lib/aws-s3";
-import { CfnResource, RemovalPolicy, Stack, Aspects, IAspect } from "aws-cdk-lib";
+import { CfnResource, RemovalPolicy, Stack, Aspects, IAspect, Aws, Fn } from "aws-cdk-lib";
 import { buildVpc } from '../lib/vpc-helper';
 import { DefaultPublicPrivateVpcProps, DefaultIsolatedVpcProps } from '../lib/vpc-defaults';
 import { overrideProps, addCfnSuppressRules } from "../lib/utils";
-import { createCacheSubnetGroup  } from "../lib/elasticache-helper";
+import * as defaults from '../index';
+import { createCacheSubnetGroup } from "../lib/elasticache-helper";
 import * as path from 'path';
 import * as cache from 'aws-cdk-lib/aws-elasticache';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
@@ -26,19 +27,33 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { CfnFunction } from "aws-cdk-lib/aws-lambda";
 import { GetDefaultCachePort } from "../lib/elasticache-defaults";
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as sfn from "aws-cdk-lib/aws-stepfunctions";
+import * as sftasks from "aws-cdk-lib/aws-stepfunctions-tasks";
+import * as api from "aws-cdk-lib/aws-apigateway";
 
 export const fakeEcrRepoArn = 'arn:aws:ecr:us-east-1:123456789012:repository/fake-repo';
 
 // Creates a bucket used for testing - minimal properties, destroyed after test
-export function CreateScrapBucket(scope: Construct, props?: BucketProps | any) {
+export function CreateScrapBucket(scope: Construct, id: string, props?: BucketProps | any) {
 
+  if (props?.serverAccessLogsBucket) {
+    throw new Error("Don't try to send a log bucket to CreateScrapBucket");
+  }
+
+  // Basic props for scrap and log buckets
   const defaultProps: BucketProps = {
     versioned: true,
     removalPolicy: RemovalPolicy.DESTROY,
     autoDeleteObjects: true,
     encryption: BucketEncryption.S3_MANAGED,
+    enforceSSL: true
   };
 
+  // Create basic log bucket
+  const logBucket = new Bucket(scope, `${id}Log`, defaultProps);
+
+  // Combine basic props with special props from test client
   let synthesizedProps: BucketProps;
   if (props) {
     synthesizedProps = overrideProps(defaultProps, props);
@@ -46,24 +61,19 @@ export function CreateScrapBucket(scope: Construct, props?: BucketProps | any) {
     synthesizedProps = defaultProps;
   }
 
+  // Finally - set up logging for the scrap bucket
+  const finalProps = overrideProps(synthesizedProps, { serverAccessLogsBucket: logBucket });
+
   const scriptBucket = new Bucket(
     scope,
-    "scrapBucket",
-    synthesizedProps
+    id,
+    finalProps
   );
 
-  addCfnSuppressRules(scriptBucket, [
-    {
-      id: "W51",
-      reason: "This S3 bucket is created for unit/ integration testing purposes only and not part of       the actual construct implementation",
-    },
+  addCfnSuppressRules(logBucket, [
     {
       id: "W35",
-      reason: "This S3 bucket is created for unit/ integration testing purposes only and not part of       the actual construct implementation",
-    },
-    {
-      id: "W41",
-      reason: "This S3 bucket is created for unit/ integration testing purposes only and not part of       the actual construct",
+      reason: "This is a log bucket",
     }
   ]);
 
@@ -105,13 +115,33 @@ export function getFakeCertificate(scope: Construct, id: string): acm.ICertifica
   );
 }
 
-export function suppressAutoDeleteHandlerWarnings(stack: Stack) {
+// Creates a bucket used for testing - minimal properties, destroyed after test
+export function CreateTestStateMachineDefinitionBody(scope: Construct, id: string): sfn.DefinitionBody {
+
+  const smStep = new lambda.Function(scope, `lambda${id}`, {
+    code: new lambda.InlineCode(
+      "exports.handler = async (event) => console.log(event)"
+    ),
+    runtime: lambda.Runtime.NODEJS_20_X,
+    handler: "index.handler",
+  });
+
+  const task = new sftasks.LambdaInvoke(scope, `task${id}`, {
+    lambdaFunction: smStep,
+  });
+
+  SuppressCfnNagLambdaWarnings(Stack.of(scope));
+
+  return sfn.DefinitionBody.fromChainable(task);
+}
+
+export function suppressCustomHandlerCfnNagWarnings(stack: Stack, handlerId: string) {
   stack.node.children.forEach(child => {
-    if (child.node.id === 'Custom::S3AutoDeleteObjectsCustomResourceProvider') {
+    if (child.node.id === handlerId) {
       const handlerFunction = child.node.findChild('Handler') as CfnFunction;
-      addCfnSuppressRules(handlerFunction, [{ id: "W58", reason: "CDK generated custom resource"}]);
-      addCfnSuppressRules(handlerFunction, [{ id: "W89", reason: "CDK generated custom resource"}]);
-      addCfnSuppressRules(handlerFunction, [{ id: "W92", reason: "CDK generated custom resource"}]);
+      addCfnSuppressRules(handlerFunction, [{ id: "W58", reason: "CDK generated custom resource" }]);
+      addCfnSuppressRules(handlerFunction, [{ id: "W89", reason: "CDK generated custom resource" }]);
+      addCfnSuppressRules(handlerFunction, [{ id: "W92", reason: "CDK generated custom resource" }]);
     }
   });
 }
@@ -164,7 +194,7 @@ export function expectKmsKeyAttachedToCorrectResource(stack: Stack, parentResour
     }
   });
 
-  const [ logicalId ] = Object.keys(resource);
+  const [logicalId] = Object.keys(resource);
   Template.fromStack(stack).hasResourceProperties(parentResourceType, {
     KmsMasterKeyId: {
       "Fn::GetAtt": [
@@ -192,6 +222,71 @@ class CfnNagLambdaAspect implements IAspect {
       ]);
     }
   }
+}
+
+export function CreateTestApi(stack: Stack, id: string): api.LambdaRestApi {
+  const lambdaFunction = new lambda.Function(stack, `${id}Function`, {
+    code: lambda.Code.fromAsset(`${__dirname}/lambda`),
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
+    handler: ".handler",
+  });
+  addCfnSuppressRules(lambdaFunction, [{ id: "W58", reason: "Test Resource" }]);
+  addCfnSuppressRules(lambdaFunction, [{ id: "W89", reason: "Test Resource" }]);
+  addCfnSuppressRules(lambdaFunction, [{ id: "W92", reason: "Test Resource" }]);
+
+  const restApi = new api.LambdaRestApi(stack, `${id}Api`, {
+    handler: lambdaFunction,
+    defaultMethodOptions: {
+      authorizationType: api.AuthorizationType.CUSTOM,
+      authorizer: CreateApiAuthorizer(stack, `${id}-authorizer`)
+    }
+  });
+
+  const newDeployment = restApi.latestDeployment;
+  if (newDeployment) {
+    addCfnSuppressRules(newDeployment, [
+      { id: "W68", reason: "Test Resource" },
+    ]);
+  }
+
+  const newMethod = restApi.methods[0];
+  addCfnSuppressRules(newMethod, [{ id: "W59", reason: "Test Resource" }]);
+  const newMethodTwo = restApi.methods[1];
+  addCfnSuppressRules(newMethodTwo, [{ id: "W59", reason: "Test Resource" }]);
+
+  const newStage = restApi.deploymentStage;
+  addCfnSuppressRules(newStage, [{ id: "W64", reason: "Test Resource" }]);
+  addCfnSuppressRules(newStage, [{ id: "W69", reason: "Test Resource" }]);
+
+  return restApi;
+}
+
+export function CreateApiAuthorizer(stack: Stack, id: string): api.IAuthorizer {
+  const authFn = new lambda.Function(stack, `${id}AuthFunction`, {
+    code: lambda.Code.fromAsset(`${__dirname}/lambda`),
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
+    handler: ".handler",
+  });
+  addCfnSuppressRules(authFn, [{ id: "W58", reason: "Test Resource" }]);
+  addCfnSuppressRules(authFn, [{ id: "W89", reason: "Test Resource" }]);
+  addCfnSuppressRules(authFn, [{ id: "W92", reason: "Test Resource" }]);
+
+  const authorizer = new api.RequestAuthorizer(stack, id, {
+    handler: authFn,
+    identitySources: [api.IdentitySource.header('Authorization')]
+  });
+
+  return authorizer;
+}
+
+// Create a short, unique to this stack name
+// technically this is not 100% OK, as it only uses a portion of the
+// stack guid - but it's for tests only so if the last segment of 2 stack guids collide someday
+// (VERY unlikely), just running again should take care of it.
+export function CreateShortUniqueTestName(stub: string) {
+  const stackGuid = Fn.select(2, Fn.split('/', `${Aws.STACK_ID}`));
+  const guidPortion = Fn.select(4, Fn.split('-', stackGuid));
+  return Fn.join("-", [stub, guidPortion]);
 }
 
 /**

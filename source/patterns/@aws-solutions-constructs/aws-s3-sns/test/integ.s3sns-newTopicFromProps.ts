@@ -15,6 +15,7 @@
 import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { S3ToSns } from "../lib";
 import { SuppressCfnNagLambdaWarnings, generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 const app = new App();
 const stack = new Stack(app, generateIntegStackName(__filename));
@@ -29,9 +30,11 @@ new S3ToSns(stack, 'test-s3-sns', {
     autoDeleteObjects: true,
   },
   topicProps: {
-    topicName: 'new-topic-from-props'
+    displayName: 'new-topic-from-props'
   }
 });
 
 SuppressCfnNagLambdaWarnings(stack);
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

@@ -21,7 +21,11 @@ import { flagOverriddenDefaults } from './override-warning-service';
 import * as log from 'npmlog';
 import * as crypto from 'crypto';
 import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from "constructs";
+
+export const COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME = lambda.Runtime.NODEJS_20_X;
+export const COMMERCIAL_REGION_LAMBDA_NODE_STRING = "nodejs20.x";
 
 function isObject(val: object) {
   return val != null && typeof val === 'object'
@@ -61,9 +65,15 @@ function isPlainObject(o: object) {
 /**
  * @internal This is an internal core function and should not be called directly by Solutions Constructs clients.
  */
-export function overrideProps(DefaultProps: object, userProps: object, concatArray: boolean = false): any {
+export function overrideProps(DefaultProps: object, userProps: object, concatArray: boolean = false, suppressWarnings?: boolean): any {
   // Notify the user via console output if defaults are overridden
-  const overrideWarningsEnabled = (process.env.overrideWarningsEnabled !== 'false');
+
+  let overrideWarningsEnabled: boolean;
+  if ((process.env.overrideWarningsEnabled === 'false') || (suppressWarnings === true)) {
+    overrideWarningsEnabled = false;
+  } else  {
+    overrideWarningsEnabled = true;
+  }
   if (overrideWarningsEnabled) {
     flagOverriddenDefaults(DefaultProps, userProps);
   }
@@ -229,7 +239,8 @@ export function consolidateProps(defaultProps: object, clientProps?: object, con
   }
 
   if (constructProps) {
-    result = overrideProps(result, constructProps, concatArray);
+    // Suppress warnings for construct props overriding everything else
+    result = overrideProps(result, constructProps, concatArray, true);
   }
 
   return result;
@@ -266,4 +277,12 @@ export function CheckListValues(allowedPermissions: string[], submittedValues: s
       throw Error(`Invalid ${valueType} submitted - ${submittedValue}`);
     }
   });
+}
+
+export function CheckBooleanWithDefault(value: boolean | undefined, defaultValue: boolean): boolean {
+  if (value === undefined) {
+    return defaultValue;
+  } else {
+    return value;
+  }
 }

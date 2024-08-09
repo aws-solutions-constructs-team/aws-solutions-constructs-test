@@ -11,28 +11,20 @@
  *  and limitations under the License.
  */
 
+import { Aws } from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as defaults from '@aws-solutions-constructs/core';
+import * as resources from '@aws-solutions-constructs/resources';
 // Note: To ensure CDKv2 compatibility, keep the import statement for Construct separate
 import { Construct } from 'constructs';
-import * as defaults from '@aws-solutions-constructs/core';
 
 /**
  * @summary The properties for the CloudFrontToS3 Construct
  */
 export interface CloudFrontToS3Props {
-  /**
-   * Existing instance of S3 Bucket object, providing both this and `bucketProps` will cause an error.
-   *
-   * @default - None
-   */
-  readonly existingBucketObj?: s3.IBucket,
-  /**
-   * Optional user provided props to override the default props for the S3 Bucket.
-   *
-   * @default - Default props are used
-   */
-  readonly bucketProps?: s3.BucketProps,
   /**
    * Optional user provided props to override the default props
    *
@@ -67,34 +59,77 @@ export interface CloudFrontToS3Props {
    * @default = '/'
    */
   readonly originPath?: string,
+
+  // =====================
+  // S3 Content Bucket
+  // =====================
   /**
-   * Optional user provided props to override the default props for the S3 Logging Bucket.
+   * Existing instance of S3 Content Bucket object, providing both this and `bucketProps` will cause an error.
+   *
+   * @default - None
+   */
+  readonly existingBucketObj?: s3.IBucket,
+  /**
+   * Optional user provided props to override the default props for the S3 Content Bucket.
    *
    * @default - Default props are used
    */
-  readonly loggingBucketProps?: s3.BucketProps
+  readonly bucketProps?: s3.BucketProps,
+
+  // =====================
+  // S3 Content Bucket Access Logs Bucket
+  // =====================
   /**
-   * Optional user provided props to override the default props for the CloudFront Logging Bucket.
-   *
-   * @default - Default props are used
-   */
-  readonly cloudFrontLoggingBucketProps?: s3.BucketProps
-  /**
-   * Whether to turn on Access Logs for the S3 bucket with the associated storage costs.
-   * Enabling Access Logging is a best practice.
+   * Optional - Whether to maintain access logs for the S3 Content bucket
    *
    * @default - true
    */
-  readonly logS3AccessLogs?: boolean;
+  readonly logS3AccessLogs?: boolean,
+  /**
+   * Optional user provided props to override the default props for the S3 Content Bucket Access Log Bucket.
+   *
+   * @default - Default props are used
+   */
+  readonly loggingBucketProps?: s3.BucketProps,
+
+  // =====================
+  // CloudFront Log Bucket
+  // =====================
+  /**
+   * Optional user provided props to override the default props for the CloudFront Log Bucket.
+   *
+   * @default - Default props are used
+   */
+  readonly cloudFrontLoggingBucketProps?: s3.BucketProps,
+
+  // =====================
+  // CloudFront Logs Bucket Access Log Bucket
+  // =====================
+  /**
+   * Optional - Whether to maintain access logs for the CloudFront Logging bucket. Specifying false for this
+   * while providing info about the log bucket will cause an error.
+   *
+   * @default - true
+   */
+  readonly logCloudFrontAccessLog?: boolean,
+  /**
+   * Optional user provided props to override the default props for the CloudFront Log Bucket Access Log bucket.
+   * Providing both this and `existingcloudFrontLoggingBucketAccessLogBucket` will cause an error
+   *
+   * @default - Default props are used
+   */
+  readonly cloudFrontLoggingBucketAccessLogBucketProps?: s3.BucketProps,
 }
 
 export class CloudFrontToS3 extends Construct {
   public readonly cloudFrontWebDistribution: cloudfront.Distribution;
   public readonly cloudFrontFunction?: cloudfront.Function;
   public readonly cloudFrontLoggingBucket?: s3.Bucket;
+  public readonly cloudFrontLoggingBucketAccessLogBucket?: s3.Bucket;
   public readonly s3BucketInterface: s3.IBucket;
   public readonly s3Bucket?: s3.Bucket;
   public readonly s3LoggingBucket?: s3.Bucket;
+  public readonly originAccessControl?: cloudfront.CfnOriginAccessControl;
 
   /**
    * @summary Constructs a new instance of the CloudFrontToS3 class.
@@ -113,8 +148,9 @@ export class CloudFrontToS3 extends Construct {
 
     defaults.CheckS3Props(props);
     defaults.CheckCloudFrontProps(props);
+    this.CheckConstructSpecificProps(props);
 
-    let bucket: s3.IBucket;
+    let originBucket: s3.IBucket;
 
     if (!props.existingBucketObj) {
       const buildS3BucketResponse = defaults.buildS3Bucket(this, {
@@ -124,25 +160,104 @@ export class CloudFrontToS3 extends Construct {
       });
       this.s3Bucket = buildS3BucketResponse.bucket;
       this.s3LoggingBucket = buildS3BucketResponse.loggingBucket;
-      bucket = this.s3Bucket;
+      originBucket = this.s3Bucket;
     } else {
-      bucket = props.existingBucketObj;
+      originBucket = props.existingBucketObj;
     }
 
-    this.s3BucketInterface = bucket;
+    this.s3BucketInterface = originBucket;
 
-    const cloudFrontDistributionForS3Response = defaults.CloudFrontDistributionForS3(
-      this,
-      this.s3BucketInterface,
-      props.cloudFrontDistributionProps,
-      props.insertHttpSecurityHeaders,
-      props.originPath,
-      props.cloudFrontLoggingBucketProps,
-      props.responseHeadersPolicyProps
-    );
+    // Define the CloudFront Distribution
+    const cloudFrontDistributionForS3Props: defaults.CreateCloudFrontDistributionForS3Props = {
+      sourceBucket: this.s3BucketInterface,
+      cloudFrontDistributionProps: props.cloudFrontDistributionProps,
+      httpSecurityHeaders: props.insertHttpSecurityHeaders,
+      cloudFrontLoggingBucketProps: props.cloudFrontLoggingBucketProps,
+      responseHeadersPolicyProps: props.responseHeadersPolicyProps,
+      cloudFrontLoggingBucketS3AccessLogBucketProps: props.cloudFrontLoggingBucketAccessLogBucketProps
+    };
+    const cloudFrontDistributionForS3Response = defaults.createCloudFrontDistributionForS3(this, id, cloudFrontDistributionForS3Props);
     this.cloudFrontWebDistribution = cloudFrontDistributionForS3Response.distribution;
     this.cloudFrontFunction = cloudFrontDistributionForS3Response.cloudfrontFunction;
     this.cloudFrontLoggingBucket = cloudFrontDistributionForS3Response.loggingBucket;
+    this.originAccessControl = cloudFrontDistributionForS3Response.originAccessControl;
+    this.cloudFrontLoggingBucketAccessLogBucket = cloudFrontDistributionForS3Response.loggingBucketS3AccesssLogBucket;
+
+    // Attach the OriginAccessControl to the CloudFront Distribution, and remove the OriginAccessIdentity
+    const l1CloudFrontDistribution = this.cloudFrontWebDistribution.node.defaultChild as cloudfront.CfnDistribution;
+    l1CloudFrontDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', this.originAccessControl?.attrId);
+    if (props.originPath) {
+      l1CloudFrontDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginPath', props.originPath);
+    }
+
+    // Grant CloudFront permission to get the objects from the s3 bucket origin
+    originBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['s3:GetObject'],
+        principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
+        resources: [originBucket.arnForObjects('*')],
+        conditions: {
+          StringEquals: {
+            'AWS:SourceArn': `arn:aws:cloudfront::${Aws.ACCOUNT_ID}:distribution/${this.cloudFrontWebDistribution.distributionId}`
+          }
+        }
+      })
+    );
+
+    // We need to create a custom resource to introduce the indirection necessary to avoid
+    // a circular dependency when granting the CloudFront distribution access to use the
+    // KMS key to decrypt objects. Without this indirection, it is not possible to reference
+    // the CloudFront distribution ID in the KMS key policy because -
+    //   * The S3 bucket references the KMS key
+    //   * The CloudFront distribution references the bucket
+    //   * The KMS key references the CloudFront distribution
+    let encryptionKey: kms.IKey | undefined;
+    if (props.bucketProps && props.bucketProps.encryptionKey) {
+      encryptionKey = props.bucketProps.encryptionKey;
+    } else if (props.existingBucketObj && props.existingBucketObj.encryptionKey) {
+      encryptionKey = props.existingBucketObj.encryptionKey;
+    }
+
+    if (encryptionKey) {
+      resources.createKeyPolicyUpdaterCustomResource(this, id,  {
+        distribution: this.cloudFrontWebDistribution,
+        encryptionKey
+      });
+    }
   }
 
+  private CheckConstructSpecificProps(props: CloudFrontToS3Props) {
+    let errorMessages = '';
+    let errorFound = false;
+
+    if ((props.logS3AccessLogs === false) && props.bucketProps?.serverAccessLogsBucket) {
+      errorMessages += 'Error - logS3AccessLogs is false, but a log bucket was provided in bucketProps.\n';
+      errorFound = true;
+    }
+
+    if (props.loggingBucketProps && props.bucketProps?.serverAccessLogsBucket) {
+      errorMessages += 'Error - bothlog bucket props and an existing log bucket were provided.\n';
+      errorFound = true;
+    }
+
+    if (props.cloudFrontLoggingBucketAccessLogBucketProps && props.cloudFrontLoggingBucketProps?.serverAccessLogsBucket) {
+      errorMessages += 'Error - an existing CloudFront log bucket S3 access log bucket and cloudFrontLoggingBucketAccessLogBucketProps were provided\n';
+      errorFound = true;
+    }
+
+    if (props.cloudFrontLoggingBucketAccessLogBucketProps && props.logCloudFrontAccessLog === false) {
+      errorMessages += 'Error - cloudFrontLoggingBucketAccessLogBucketProps were provided but logCloudFrontAccessLog was false\n';
+      errorFound = true;
+    }
+
+    if (props.cloudFrontLoggingBucketProps?.serverAccessLogsBucket && props.logCloudFrontAccessLog === false) {
+      errorMessages += 'Error - props.cloudFrontLoggingBucketProps.serverAccessLogsBucket was provided but logCloudFrontAccessLog was false\n';
+      errorFound = true;
+    }
+
+    if (errorFound) {
+      throw new Error(errorMessages);
+    }
+  }
 }

@@ -16,6 +16,7 @@ import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { S3ToLambda, S3ToLambdaProps } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as defaults from '@aws-solutions-constructs/core';
 
@@ -27,7 +28,7 @@ const stack = new Stack(app, generateIntegStackName(__filename));
 const props: S3ToLambdaProps = {
   lambdaFunctionProps: {
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler'
   },
   bucketProps: {
@@ -47,5 +48,7 @@ defaults.addCfnSuppressRules(s3Bucket, [
     reason: 'This S3 bucket is created for unit/ integration testing purposes only.' },
 ]);
 
-defaults.suppressAutoDeleteHandlerWarnings(stack);
-app.synth();
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

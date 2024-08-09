@@ -50,14 +50,14 @@ test('check the sqs queue properties', () => {
   template.hasResourceProperties('AWS::SQS::Queue', {
     KmsMasterKeyId: {
       "Fn::GetAtt": [
-        "testeventbridgesqsEncryptionKey811BDC23",
+        "testeventbridgesqsqueueKey396E8615",
         "Arn"
       ]
     },
     RedrivePolicy: {
       deadLetterTargetArn: {
         "Fn::GetAtt": [
-          "testeventbridgesqsdeadLetterQueueF5B377E2",
+          "testeventbridgesqsqueuedlq29C7739E",
           "Arn"
         ]
       },
@@ -68,7 +68,7 @@ test('check the sqs queue properties', () => {
 
 test('check the sqs queue properties with existing KMS key', () => {
   const stack = new cdk.Stack();
-  const key = defaults.buildEncryptionKey(stack, {
+  const key = defaults.buildEncryptionKey(stack, 'test', {
     description: 'my-key'
   });
 
@@ -88,14 +88,14 @@ test('check the sqs queue properties with existing KMS key', () => {
   template.hasResourceProperties('AWS::SQS::Queue', {
     KmsMasterKeyId: {
       "Fn::GetAtt": [
-        "EncryptionKey1B843E66",
+        "testKey2C00E5E5",
         "Arn"
       ]
     },
     RedrivePolicy: {
       deadLetterTargetArn: {
         "Fn::GetAtt": [
-          "testeventbridgesqsdeadLetterQueueF5B377E2",
+          "testeventbridgesqsqueuedlq29C7739E",
           "Arn"
         ]
       },
@@ -238,7 +238,7 @@ test('check if the dead letter queue policy is setup', () => {
           },
           Resource:  {
             "Fn::GetAtt": [
-              "testeventbridgesqsdeadLetterQueueF5B377E2",
+              "testeventbridgesqsqueuedlq29C7739E",
               "Arn",
             ],
           },
@@ -257,7 +257,7 @@ test('check if the dead letter queue policy is setup', () => {
           },
           Resource:  {
             "Fn::GetAtt": [
-              "testeventbridgesqsdeadLetterQueueF5B377E2",
+              "testeventbridgesqsqueuedlq29C7739E",
               "Arn",
             ],
           },
@@ -268,7 +268,7 @@ test('check if the dead letter queue policy is setup', () => {
     },
     Queues: [
       {
-        Ref: "testeventbridgesqsdeadLetterQueueF5B377E2",
+        Ref: "testeventbridgesqsqueuedlq29C7739E",
       },
     ]
   });
@@ -341,7 +341,7 @@ test('check custom event bus resource with props when deploy:true', () => {
 
 test('Queue is encrypted when key is provided on queueProps.encryptionMasterKey prop', () => {
   const stack = new cdk.Stack();
-  const key = defaults.buildEncryptionKey(stack, {
+  const key = defaults.buildEncryptionKey(stack, 'test', {
     description: 'my-key'
   });
 
@@ -360,7 +360,7 @@ test('Queue is encrypted when key is provided on queueProps.encryptionMasterKey 
   template.hasResourceProperties('AWS::SQS::Queue', {
     KmsMasterKeyId: {
       "Fn::GetAtt": [
-        "EncryptionKey1B843E66",
+        "testKey2C00E5E5",
         "Arn"
       ]
     }
@@ -390,7 +390,7 @@ test('Queue is encrypted when key keyProps are provided', () => {
   template.hasResourceProperties('AWS::SQS::Queue', {
     KmsMasterKeyId: {
       "Fn::GetAtt": [
-        "testeventbridgesqsEncryptionKey811BDC23",
+        "testeventbridgesqsqueueKey396E8615",
         "Arn"
       ]
     }

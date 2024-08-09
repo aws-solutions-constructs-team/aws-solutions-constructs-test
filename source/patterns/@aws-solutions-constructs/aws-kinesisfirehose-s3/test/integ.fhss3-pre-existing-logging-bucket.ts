@@ -13,9 +13,10 @@
 
 // Imports
 import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
-import { CreateScrapBucket, suppressAutoDeleteHandlerWarnings } from '@aws-solutions-constructs/core';
+import { CreateScrapBucket, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
 import { KinesisFirehoseToS3 } from '../lib';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -23,7 +24,7 @@ const stack = new Stack(app, generateIntegStackName(__filename));
 stack.templateOptions.description = 'Integration Test for aws-kinesisfirehose-s3';
 stack.node.setContext("@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy", true);
 
-const existingBucket = CreateScrapBucket(stack, {
+const existingBucket = CreateScrapBucket(stack, "scrapBucket", {
 });
 
 new KinesisFirehoseToS3(stack, 'test-firehose-s3-pre-existing-logging-bucket-stack', {
@@ -33,7 +34,9 @@ new KinesisFirehoseToS3(stack, 'test-firehose-s3-pre-existing-logging-bucket-sta
     serverAccessLogsBucket: existingBucket
   }
 });
-suppressAutoDeleteHandlerWarnings(stack);
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

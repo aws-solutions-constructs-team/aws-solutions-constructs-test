@@ -21,7 +21,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { DefaultSnsTopicProps } from './sns-defaults';
 import { buildEncryptionKey } from './kms-helper';
-import { consolidateProps, printWarning } from './utils';
+import { consolidateProps } from './utils';
 import { PolicyStatement, AnyPrincipal, Effect, AccountPrincipal } from 'aws-cdk-lib/aws-iam';
 import { Stack } from 'aws-cdk-lib';
 // Note: To ensure CDKv2 compatibility, keep the import statement for Construct separate
@@ -139,14 +139,10 @@ export interface BuildTopicResponse {
 /**
  * @internal This is an internal core function and should not be called directly by Solutions Constructs clients.
  */
-export function buildTopic(scope: Construct, props: BuildTopicProps): BuildTopicResponse {
+export function buildTopic(scope: Construct, id: string, props: BuildTopicProps): BuildTopicResponse {
   if (!props.existingTopicObj) {
     // Setup the topic properties
     const snsTopicProps = consolidateProps(DefaultSnsTopicProps, props.topicProps);
-
-    if ((props.topicProps?.masterKey || props.encryptionKey || props.encryptionKeyProps) && props.enableEncryptionWithCustomerManagedKey === true) {
-      printWarning("Ignoring enableEncryptionWithCustomerManagedKey because one of topicProps.masterKey, encryptionKey, or encryptionKeyProps was already specified");
-    }
 
     // Set encryption properties
     if (props.topicProps?.masterKey) {
@@ -154,7 +150,7 @@ export function buildTopic(scope: Construct, props: BuildTopicProps): BuildTopic
     } else if (props.encryptionKey) {
       snsTopicProps.masterKey = props.encryptionKey;
     } else if (props.encryptionKeyProps || props.enableEncryptionWithCustomerManagedKey === true) {
-      snsTopicProps.masterKey = buildEncryptionKey(scope, props.encryptionKeyProps);
+      snsTopicProps.masterKey = buildEncryptionKey(scope, id, props.encryptionKeyProps);
     } else {
       snsTopicProps.masterKey = kms.Alias.fromAliasName(scope, 'aws-managed-key', 'alias/aws/sns');
     }

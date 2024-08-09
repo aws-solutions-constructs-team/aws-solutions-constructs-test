@@ -15,19 +15,19 @@
 import { Stack } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as defaults from '@aws-solutions-constructs/core';
-import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
+import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
+import * as sftasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { LambdaToStepfunctions, LambdaToStepfunctionsProps } from '../lib';
-import { Template } from "aws-cdk-lib/assertions";
+import { Template, Match } from "aws-cdk-lib/assertions";
 
 test('Test deployment with new Lambda function', () => {
   // Stack
   const stack = new Stack();
   // Helper declaration
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   new LambdaToStepfunctions(stack, 'lambda-to-step-function-stack', {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`),
       environment: {
@@ -35,7 +35,7 @@ test('Test deployment with new Lambda function', () => {
       }
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     }
   });
 
@@ -52,16 +52,12 @@ test('Test deployment with new Lambda function', () => {
   });
 });
 
-// --------------------------------------------------------------
-// Test deployment with existing Lambda function
-// --------------------------------------------------------------
 test('Test deployment with existing Lambda function', () => {
   // Stack
   const stack = new Stack();
   // Helper declaration
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const lambdaFunctionProps = {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
     environment: {
@@ -73,7 +69,7 @@ test('Test deployment with existing Lambda function', () => {
   new LambdaToStepfunctions(stack, 'test-lambda-step-function-construct', {
     existingLambdaObj: fn,
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     }
   });
 
@@ -91,9 +87,8 @@ test('Test invocation permissions', () => {
   // Stack
   const stack = new Stack();
   // Helper declaration
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const lambdaFunctionProps = {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
     environment: {
@@ -105,7 +100,7 @@ test('Test invocation permissions', () => {
   new LambdaToStepfunctions(stack, 'test-lambda-step-function-stack', {
     existingLambdaObj: fn,
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     }
   });
   // Assertion 1
@@ -138,10 +133,9 @@ test('Test the properties', () => {
   // Stack
   const stack = new Stack();
   // Helper declaration
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const pattern = new LambdaToStepfunctions(stack, 'lambda-to-step-function-stack', {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`),
       environment: {
@@ -149,10 +143,10 @@ test('Test the properties', () => {
       }
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     }
   });
-    // Assertion 1
+  // Assertion 1
   const func = pattern.lambdaFunction;
   expect(func).toBeDefined();
   // Assertion 2
@@ -168,10 +162,9 @@ test('Test the properties with no CW Alarms', () => {
   // Stack
   const stack = new Stack();
   // Helper declaration
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const pattern = new LambdaToStepfunctions(stack, 'lambda-to-step-function-stack', {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`),
       environment: {
@@ -179,7 +172,7 @@ test('Test the properties with no CW Alarms', () => {
       }
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     },
     createCloudWatchAlarms: false
   });
@@ -197,15 +190,14 @@ test('Test lambda function custom environment variable', () => {
   const stack = new Stack();
 
   // Helper declaration
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   new LambdaToStepfunctions(stack, 'lambda-to-step-function-stack', {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`)
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     },
     stateMachineEnvironmentVariableName: 'CUSTOM_STATE_MAHINCE'
   });
@@ -214,10 +206,9 @@ test('Test lambda function custom environment variable', () => {
   const template = Template.fromStack(stack);
   template.hasResourceProperties('AWS::Lambda::Function', {
     Handler: 'index.handler',
-    Runtime: 'nodejs16.x',
+    Runtime: 'nodejs20.x',
     Environment: {
       Variables: {
-        AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
         CUSTOM_STATE_MAHINCE: {
           Ref: 'lambdatostepfunctionstackStateMachine98EE8EFB'
         }
@@ -229,16 +220,15 @@ test('Test lambda function custom environment variable', () => {
 test("Test minimal deployment that deploys a VPC without vpcProps", () => {
   // Stack
   const stack = new Stack();
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   // Helper declaration
   new LambdaToStepfunctions(stack, "lambda-to-stepfunctions-stack", {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`)
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     },
     deployVpc: true
   });
@@ -278,22 +268,18 @@ test("Test minimal deployment that deploys a VPC without vpcProps", () => {
   template.resourceCountIs("AWS::EC2::InternetGateway", 0);
 });
 
-// --------------------------------------------------------------
-// Test minimal deployment that deploys a VPC w/vpcProps
-// --------------------------------------------------------------
 test("Test minimal deployment that deploys a VPC w/vpcProps", () => {
   // Stack
   const stack = new Stack();
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   // Helper declaration
   new LambdaToStepfunctions(stack, "lambda-to-stepfunctions-stack", {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`)
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     },
     vpcProps: {
       enableDnsHostnames: false,
@@ -342,18 +328,17 @@ test("Test minimal deployment that deploys a VPC w/vpcProps", () => {
 test("Test minimal deployment with an existing VPC", () => {
   // Stack
   const stack = new Stack();
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const testVpc = new ec2.Vpc(stack, "test-vpc", {});
 
   // Helper declaration
   new LambdaToStepfunctions(stack, "lambda-to-stepfunctions-stack", {
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`)
     },
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     },
     existingVpc: testVpc,
   });
@@ -388,10 +373,9 @@ test("Test minimal deployment with an existing VPC", () => {
 test("Test minimal deployment with an existing VPC and existing Lambda function not in a VPC", () => {
   // Stack
   const stack = new Stack();
-  const startState = new stepfunctions.Pass(stack, 'StartState');
 
   const testLambdaFunction = new lambda.Function(stack, 'test-lamba', {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: "index.handler",
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
   });
@@ -405,7 +389,7 @@ test("Test minimal deployment with an existing VPC and existing Lambda function 
     new LambdaToStepfunctions(stack, "lambda-to-stepfunctions-stack", {
       existingLambdaObj: testLambdaFunction,
       stateMachineProps: {
-        definition: startState
+        definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
       },
       existingVpc: testVpc,
     });
@@ -419,19 +403,18 @@ test("Test minimal deployment with an existing VPC and existing Lambda function 
 test("Confirm CheckVpcProps is called", () => {
   // Stack
   const stack = new Stack();
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const testVpc = new ec2.Vpc(stack, "test-vpc", {});
 
   const app = () => {
     // Helper declaration
     new LambdaToStepfunctions(stack, "lambda-to-stepfunctions-stack", {
       lambdaFunctionProps: {
-        runtime: lambda.Runtime.NODEJS_16_X,
+        runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
         handler: 'index.handler',
         code: lambda.Code.fromAsset(`${__dirname}/lambda`)
       },
       stateMachineProps: {
-        definition: startState
+        definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
       },
       existingVpc: testVpc,
       deployVpc: true,
@@ -445,18 +428,17 @@ test('Confirm call to CheckLambdaProps', () => {
   // Initial Setup
   const stack = new Stack();
   const lambdaFunction = new lambda.Function(stack, 'a-function', {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
   });
 
-  const startState = new stepfunctions.Pass(stack, 'StartState');
   const props: LambdaToStepfunctionsProps = {
     stateMachineProps: {
-      definition: startState
+      definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 'lamstp-test')
     },
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`),
     },
@@ -467,4 +449,49 @@ test('Confirm call to CheckLambdaProps', () => {
   };
   // Assertion
   expect(app).toThrowError('Error - Either provide lambdaFunctionProps or existingLambdaObj, but not both.\n');
+});
+
+test('Test deployment a state machine that needs priveleges for tasks', () => {
+  // Stack
+  const stack = new Stack();
+
+  const clientFunction = defaults.deployLambdaFunction(stack, {
+    runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
+    handler: 'index.handler',
+    code: lambda.Code.fromAsset(`${__dirname}/lambda`),
+    environment: {
+      LAMBDA_NAME: 'existing-function'
+    }
+  });
+
+  const taskFunction = defaults.deployLambdaFunction(stack, {
+    runtime:  defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
+    handler: 'index.handler',
+    code: lambda.Code.fromAsset(`${__dirname}/lambda-task`),
+    environment: {
+      LAMBDA_NAME: 'existing-function'
+    }
+  }, "taskFunction");
+
+  // Launch the construct
+  const startState = new sftasks.LambdaInvoke(stack, 'permission-test', {
+    lambdaFunction: taskFunction
+  });
+
+  new LambdaToStepfunctions(stack, 'test-lambda-step-function-construct', {
+    existingLambdaObj: clientFunction,
+    stateMachineProps: {
+      definitionBody: sfn.DefinitionBody.fromChainable(startState)
+    }
+  });
+
+  const template = Template.fromStack(stack);
+  template.hasResourceProperties("AWS::IAM::Policy", {
+    PolicyDocument: {
+      Statement: Match.arrayWith([Match.objectLike({
+        Action: 'lambda:InvokeFunction',
+        Effect: 'Allow'
+      })])
+    }
+  });
 });

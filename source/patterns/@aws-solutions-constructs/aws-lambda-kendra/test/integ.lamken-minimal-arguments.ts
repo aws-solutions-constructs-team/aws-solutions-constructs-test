@@ -16,19 +16,21 @@ import { App, Stack } from "aws-cdk-lib";
 import { LambdaToKendra } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
-import { generateIntegStackName, suppressAutoDeleteHandlerWarnings } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
 const stack = new Stack(app, generateIntegStackName(__filename));
 stack.templateOptions.description = 'Integration Test for aws-lambda-kendra';
+stack.node.setContext("@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy", true);
 
-const testBucket = defaults.CreateScrapBucket(stack);
+const testBucket = defaults.CreateScrapBucket(stack, "contentBucket");
 
 new LambdaToKendra(stack, 'minimal-arguments', {
   lambdaFunctionProps: {
     code: lambda.Code.fromAsset(`lambda`),
-    runtime: lambda.Runtime.NODEJS_18_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
   },
   kendraDataSourcesProps: [{
@@ -41,4 +43,8 @@ new LambdaToKendra(stack, 'minimal-arguments', {
   }],
 });
 
-suppressAutoDeleteHandlerWarnings(stack);
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+// Synth
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

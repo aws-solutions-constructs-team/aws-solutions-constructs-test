@@ -12,11 +12,13 @@
  */
 
 /// !cdk-integ *
-import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
-import { BucketEncryption } from "aws-cdk-lib/aws-s3";
+import { App, Stack, RemovalPolicy, Duration } from "aws-cdk-lib";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { LambdaToS3 } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { generateIntegStackName, suppressAutoDeleteHandlerWarnings } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from "@aws-solutions-constructs/core";
 
 const app = new App();
 
@@ -25,7 +27,7 @@ const stack = new Stack(app, generateIntegStackName(__filename));
 
 new LambdaToS3(stack, 'test-lambda-s3', {
   lambdaFunctionProps: {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`)
   },
@@ -35,10 +37,18 @@ new LambdaToS3(stack, 'test-lambda-s3', {
   loggingBucketProps: {
     removalPolicy: RemovalPolicy.DESTROY,
     autoDeleteObjects: true,
-    bucketName: 'custom-logging-bucket',
-    encryption: BucketEncryption.S3_MANAGED,
-    versioned: true
+    // This functionality is inconsequential, it just confirms
+    // that these props continue to be utilized
+    lifecycleRules: [{
+      enabled: true,
+      transitions: [{
+        storageClass: s3.StorageClass.GLACIER,
+        transitionAfter: Duration.days(7)
+      }]
+    }]
   }
 });
-suppressAutoDeleteHandlerWarnings(stack);
-app.synth();
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

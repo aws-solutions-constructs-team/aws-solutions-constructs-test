@@ -16,6 +16,8 @@ import { App, Stack } from "aws-cdk-lib";
 import { SnsToLambda, SnsToLambdaProps } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 // Setup
 const app = new App();
@@ -25,7 +27,7 @@ stack.templateOptions.description = 'Integration Test for aws-sns-lambda';
 // Definitions
 const props: SnsToLambdaProps = {
   lambdaFunctionProps: {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`)
   }
@@ -34,4 +36,6 @@ const props: SnsToLambdaProps = {
 new SnsToLambda(stack, 'test-sns-lambda', props);
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

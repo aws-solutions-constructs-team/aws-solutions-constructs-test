@@ -14,7 +14,8 @@
 // Imports
 import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { KinesisStreamsToKinesisFirehoseToS3 } from '../lib';
-import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -24,11 +25,19 @@ stack.templateOptions.description = 'Integration Test for aws-kinesisstreams-kin
 new KinesisStreamsToKinesisFirehoseToS3(stack, 'test-stream-firehose-s3', {
   bucketProps: {
     removalPolicy: RemovalPolicy.DESTROY,
+    autoDeleteObjects: true
+  },
+  loggingBucketProps: {
+    removalPolicy: RemovalPolicy.DESTROY,
+    autoDeleteObjects: true
   },
   logGroupProps: {
     removalPolicy: RemovalPolicy.DESTROY
   }
 });
 
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

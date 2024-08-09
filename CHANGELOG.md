@@ -2,6 +2,185 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.64.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.63.0...v2.64.0) (2024-07-31)
+
+Built on CDK v2.150.0
+
+* **aws-alb-lambda** allow vpc in loadBalancerProps when specifying subnets ([#1161](https://github.com/awslabs/aws-solutions-constructs/issues/1161))
+
+## [2.63.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.62.0...v2.63.0) (2024-07-19)
+
+Built on CDK v2.150.0
+
+* **aws-apigatewayv2websockets-sqs:** New construct! ([#1140](https://github.com/awslabs/aws-solutions-constructs/pull/1140))
+
+## [2.62.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.61.0...v2.62.0) (2024-07-16)
+
+Built on CDK v2.147.3
+
+### Features
+
+* **apigateway:** accept MethodResponses along with IntegrationResponses ([#1146](https://github.com/awslabs/aws-solutions-constructs/issues/1146)) ([c351953](https://github.com/awslabs/aws-solutions-constructs/commit/c35195335b530bde8e782bdc2ded8003060c9650))
+
+
+### Bug Fixes
+
+* **resources/template-writer:** add IAM policy as customResource dependency ([#1148](https://github.com/awslabs/aws-solutions-constructs/issues/1148)) ([bbdeddd](https://github.com/awslabs/aws-solutions-constructs/commit/bbdeddd4b5c57cdc2397f82d1724027e610df550))
+
+## [2.61.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.60.0...v2.61.0) (2024-07-05)
+
+Built on CDK v2.147.3
+
+### Maintenance
+
+* Updated all javascript to Node.js 20
+
+## [2.60.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.59.0...v2.60.0) (2024-06-11)
+
+Built on CDK v2.145.0
+
+### Features
+
+* **aws-constructs-factories:** add a factory for sqs queues ([#1131](https://github.com/awslabs/aws-solutions-constructs/issues/1131)) ([b35b9b8](https://github.com/awslabs/aws-solutions-constructs/commit/b35b9b86dcbda1d90dceac1cc539be816defe288))
+
+## [2.59.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.58.1...v2.59.0) (2024-06-08)
+
+Built on CDK v2.143.0
+
+### Features
+
+* **aws-constructs-factories:** add state machine factory ([#1128](https://github.com/awslabs/aws-solutions-constructs/issues/1128)) ([d82342c](https://github.com/awslabs/aws-solutions-constructs/commit/d82342c99c1b5ec77a015c96620bc99b0650346f))
+
+### Bug Fixes
+
+* **aws-s3-cloudfront:** address handling and definition of peripheral buckets ([#1129](https://github.com/awslabs/aws-solutions-constructs/issues/1129)) ([8b30791](https://github.com/awslabs/aws-solutions-constructs/commit/8b30791902e09db2f7c49410a03d5d95ccc2ef51))
+
+## [2.58.1](https://github.com/awslabs/aws-solutions-constructs/compare/v2.58.0...v2.58.1) (2024-05-28)
+
+Built on CDK v2.143.0
+
+No library changes - testing changes in our CI/CD process
+
+## [2.58.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.57.0...v2.58.0) (2024-05-25)
+
+Built on CDK v2.143.0
+
+### Bug Fixes
+
+* **aws-sns-sqs:** fix circular dependency error in aws-sns-sqs ([#1122](https://github.com/awslabs/aws-solutions-constructs/issues/1122)) ([2366272](https://github.com/awslabs/aws-solutions-constructs/commit/23662723b477baf43787979cb9c8b809ceba6dfe))
+
+## [2.57.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.56.0...v2.57.0) (2024-05-06)
+
+Built on CDK v2.138.0
+
+### Bug Fixes
+
+* **utils:** address issues in printing override warnings ([#1113](https://github.com/awslabs/aws-solutions-constructs/issues/1113)) ([1732949](https://github.com/awslabs/aws-solutions-constructs/commit/1732949a7b81fe4670d642a83db091e08b954317))
+
+## [2.56.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.55.0...v2.56.0) (2024-04-24)
+
+Built on CDK v2.138.0
+
+### Features
+
+* **s3:** constructs factories - create well architected s3 buckets ([#1110](https://github.com/awslabs/aws-solutions-constructs/issues/1110)) ([f561cf6](https://github.com/awslabs/aws-solutions-constructs/commit/f561cf65c377684c0579417b404b33cdc97fa407))
+
+## [2.55.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.54.1...v2.55.0) (2024-04-12)
+
+Built on CDK v2.135.0
+
+### Bug Fixes
+
+* **kms:** do not use fixed name when building kms key constructs ([#1103](https://github.com/awslabs/aws-solutions-constructs/issues/1103)) ([a5fa0f9](https://github.com/awslabs/aws-solutions-constructs/commit/a5fa0f957e763802062dcb99d2b0508ad3f09154))
+
+## [2.54.1](https://github.com/awslabs/aws-solutions-constructs/compare/v2.54.0...v2.54.1) (2024-04-04)
+
+Built on CDK v2.135.0
+
+### Bug Fixes
+
+* **openapigateway-to-lambda:** refine python example in README based on deployed code ([#1093](https://github.com/awslabs/aws-solutions-constructs/issues/1093)) ([57738a2](https://github.com/awslabs/aws-solutions-constructs/commit/57738a227fb073188ce1ac1c06c696e03e87bfae))
+
+* **aws-kinesisstreams-kinesisfirehose-s3:** allow later versions of cdk lib by updating peerDependencies ([#1094](https://github.com/awslabs/aws-solutions-constructs/issues/1094)) ([e08903f7f6839e343cd0df207ae80c03c2dcace3](https://github.com/awslabs/aws-solutions-constructs/pull/1095/commits/e08903f7f6839e343cd0df207ae80c03c2dcace3))
+
+## [2.54.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.53.0...v2.54.0) (2024-02-29)
+
+Built on CDK v2.130.0
+
+### Bug Fixes
+
+* **step-functions** no longer attempt to modify cloudwatch logs permissions for state machines ([#1090](https://github.com/awslabs/aws-solutions-constructs/pull/1090))
+
+## [2.53.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.52.1...v2.53.0) (2024-02-22)
+
+Built on CDK v2.127.0
+
+### Bug Fixes
+
+* **stepfunctions** find correct logs policy statement to replace ([#1086](https://github.com/awslabs/aws-solutions-constructs/pull/1086))
+
+## [2.52.1](https://github.com/awslabs/aws-solutions-constructs/compare/v2.52.0...v2.52.1) (2024-02-16)
+
+Built on CDK v2.127.0
+
+### Bug Fixes
+
+* **all:** correct aws-cdk-lib version in peerdependency ([#1081](https://github.com/awslabs/aws-solutions-constructs/issues/1081)) ([1ad214d](https://github.com/awslabs/aws-solutions-constructs/commit/1ad214d9f85a742a168734a0b29ace597fd60e4d))
+
+## [2.52.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.51.0...v2.52.0) (2024-02-12)
+
+Built on CDK v2.127.0
+
+### Bug Fixes
+
+* **npmlog:** update npmlog version ([#1075](https://github.com/awslabs/aws-solutions-constructs/issues/1075)) ([968639a](https://github.com/awslabs/aws-solutions-constructs/commit/968639ae3048dc933a6c6e7baf9013e0f41bd16a))
+
+## [2.51.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.50.0...v2.51.0) (2024-01-30)
+
+Built on CDK v2.118.0
+
+* **all:** lack of ^ in package.json led to version incompability (PR [1066](https://github.com/awslabs/aws-solutions-constructs/pull/1066))
+
+
+## [2.50.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.49.0...v2.50.0) (2024-01-30)
+
+Built on CDK v2.118.0
+
+### Bug Fixes
+
+* **aws-eventbridge-lambda:** handle provided role correctly (PR [1063](https://github.com/awslabs/aws-solutions-constructs/pull/1063))
+
+## [2.49.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.48.0...v2.49.0) (2024-01-23)
+
+Built on CDK v2.118.0
+
+### Bug Fixes
+
+* **aws-cloudfront-s3:** do not create s3 access log bucket for cf log bucket when an existing bucket is provided (PR [1052](https://github.com/awslabs/aws-solutions-constructs/pull/1052))
+
+* **aws-cloudfront-s3:** insert empty originAccessIdentity (PR [1053](https://github.com/awslabs/aws-solutions-constructs/pull/1053))
+
+## [2.48.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.47.0...v2.48.0) (2024-01-09)
+
+Built on CDK v2.111.0
+
+### ⚠ BREAKING CHANGES
+
+* **aws-cloudfront-apigateway-lambda:** require explicit authentication type ([#1044](https://github.com/awslabs/aws-solutions-constructs/issues/1044)) ([720dec5](https://github.com/awslabs/aws-solutions-constructs/commit/720dec500a728a3c57832b7e479ee8eca1f08056))
+
+### Features
+
+* **aws-cloudfront-s3:** update construct to use origin access controls; add support for CMK-encrypted buckets ([#1038](https://github.com/awslabs/aws-solutions-constructs/issues/1038)) ([012f9e7](https://github.com/awslabs/aws-solutions-constructs/commit/012f9e7b6ebd3a717ff120941131a84e803b2922)), closes [#1037](https://github.com/awslabs/aws-solutions-constructs/issues/1037)
+* **cloudfront constructs:** add s3 access logging to cloudfront access log buckets by default ([#1042](https://github.com/awslabs/aws-solutions-constructs/issues/1042)) ([51ec028](https://github.com/awslabs/aws-solutions-constructs/commit/51ec028ebd4763965671483e74924e3b8e328337))
+
+## [2.47.0](https://github.com/awslabs/aws-solutions-constructs/compare/v2.46.0...v2.47.0) (2023-12-01)
+
+Built on CDK v2.111.0
+
+### Bug Fixes
+
+* **aws-apigateway-sqs:** Remove /message path when delete method is not allowed ([#1030](https://github.com/awslabs/aws-solutions-constructs/issues/1030)) ([f772200](https://github.com/awslabs/aws-solutions-constructs/commit/f772200d6885cf0e0030239ce6f7511cdb2814d6))
+=======
 
 ## [2.47.0](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/compare/v2.14.0...v2.47.0) (2023-11-27)
 

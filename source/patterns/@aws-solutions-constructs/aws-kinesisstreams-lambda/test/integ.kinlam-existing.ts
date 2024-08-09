@@ -18,6 +18,8 @@ import * as kinesis from 'aws-cdk-lib/aws-kinesis';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 // Setup
 const app = new App();
@@ -41,7 +43,7 @@ const lambdaRole = new iam.Role(stack, 'test-role', {
 });
 
 const lambdaFn = new lambda.Function(stack, 'test-fn', {
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler',
   code: lambda.Code.fromAsset(`${__dirname}/lambda`),
   role: lambdaRole,
@@ -80,4 +82,6 @@ const props: KinesisStreamsToLambdaProps = {
 new KinesisStreamsToLambda(stack, 'test-ks-lambda', props);
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

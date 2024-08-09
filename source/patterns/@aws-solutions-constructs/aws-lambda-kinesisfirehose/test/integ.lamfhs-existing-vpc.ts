@@ -16,6 +16,7 @@ import { App, Stack } from "aws-cdk-lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import {LambdaToKinesisFirehose } from "../lib";
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import * as defaults from '@aws-solutions-constructs/core';
 import { GetTestFirehoseDestination } from './test-helper';
 
@@ -29,7 +30,7 @@ const myVpc = defaults.getTestVpc(stack);
 
 new LambdaToKinesisFirehose(stack, 'test-construct', {
   lambdaFunctionProps: {
-    runtime: lambda.Runtime.NODEJS_18_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: "index.handler",
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
   },
@@ -37,7 +38,10 @@ new LambdaToKinesisFirehose(stack, 'test-construct', {
   existingVpc: myVpc
 });
 
-defaults.suppressAutoDeleteHandlerWarnings(stack);
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

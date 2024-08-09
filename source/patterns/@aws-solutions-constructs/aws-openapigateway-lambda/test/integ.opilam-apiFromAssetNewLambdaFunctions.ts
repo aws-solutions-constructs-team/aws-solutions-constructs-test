@@ -17,6 +17,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
 import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as path from 'path';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 const app = new App();
 const stack = new Stack(app, defaults.generateIntegStackName(__filename));
@@ -32,7 +33,7 @@ new OpenApiGatewayToLambda(stack, 'OpenApiGatewayToLambda', {
     {
       id: 'MessagesHandler',
       lambdaFunctionProps: {
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
         handler: 'index.handler',
         code: lambda.Code.fromAsset(`${__dirname}/messages-lambda`),
       }
@@ -40,7 +41,7 @@ new OpenApiGatewayToLambda(stack, 'OpenApiGatewayToLambda', {
     {
       id: 'PhotosHandler',
       lambdaFunctionProps: {
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
         handler: 'index.handler',
         code: lambda.Code.fromAsset(`${__dirname}/photos-lambda`),
       }
@@ -49,4 +50,6 @@ new OpenApiGatewayToLambda(stack, 'OpenApiGatewayToLambda', {
 });
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

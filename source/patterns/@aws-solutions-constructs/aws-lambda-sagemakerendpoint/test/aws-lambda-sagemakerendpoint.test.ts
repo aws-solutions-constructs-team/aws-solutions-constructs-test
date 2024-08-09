@@ -108,7 +108,7 @@ test('Pattern deployment with new Lambda function, new Sagemaker endpoint, deplo
       },
     ],
     KmsKeyId: {
-      Ref: 'testlambdasagemakerEncryptionKey2AACF9E0',
+      Ref: 'testlambdasagemakertestlambdasagemakerKey5BF0746F',
     },
   });
 
@@ -485,7 +485,7 @@ test('Test getter methods: new Lambda function, existingSagemakerendpointObj (no
   // Initial Setup
   const stack = new Stack();
 
-  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, {
+  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, 'test', {
     modelProps: {
       primaryContainer: {
         image: '<AccountId>.dkr.ecr.<region>.amazonaws.com/linear-learner:latest',
@@ -520,7 +520,7 @@ test('Test getter methods: new Lambda function, existingSagemakerendpointObj and
   // Initial Setup
   const stack = new Stack();
 
-  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, {
+  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, 'test', {
     modelProps: {
       primaryContainer: {
         image: '<AccountId>.dkr.ecr.<region>.amazonaws.com/linear-learner:latest',
@@ -557,7 +557,7 @@ test('Test lambda function custom environment variable', () => {
   const stack = new Stack();
 
   // Helper declaration
-  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, {
+  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, 'test', {
     modelProps: {
       primaryContainer: {
         image: '<AccountId>.dkr.ecr.<region>.amazonaws.com/linear-learner:latest',
@@ -597,7 +597,7 @@ test('Confirm call to CheckLambdaProps', () => {
   // Initial Setup
   const stack = new Stack();
   const lambdaFunction = new lambda.Function(stack, 'a-function', {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
   });
@@ -610,7 +610,7 @@ test('Confirm call to CheckLambdaProps', () => {
       },
     },
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`),
     },
@@ -626,7 +626,7 @@ test('Confirm call to CheckLambdaProps', () => {
 test('Confirm call to CheckSagemakerProps', () => {
   // Initial Setup
   const stack = new Stack();
-  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, {
+  const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, 'test', {
     modelProps: {
       primaryContainer: {
         image: '<AccountId>.dkr.ecr.<region>.amazonaws.com/linear-learner:latest',
@@ -639,7 +639,7 @@ test('Confirm call to CheckSagemakerProps', () => {
     existingSagemakerEndpointObj: deploySagemakerEndpointResponse.endpoint,
     endpointProps: { endpointConfigName: 'test' },
     lambdaFunctionProps: {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(`${__dirname}/lambda`),
     },

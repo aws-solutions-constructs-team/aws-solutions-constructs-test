@@ -15,8 +15,10 @@
 import { App, Stack } from "aws-cdk-lib";
 import { S3ToLambda, S3ToLambdaProps } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { CreateScrapBucket, suppressAutoDeleteHandlerWarnings } from "@aws-solutions-constructs/core";
+import { CreateScrapBucket, suppressCustomHandlerCfnNagWarnings } from "@aws-solutions-constructs/core";
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 const app = new App();
 
@@ -24,12 +26,12 @@ const app = new App();
 const stack = new Stack(app, generateIntegStackName(__filename));
 stack.node.setContext("@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy", true);
 
-const myBucket = CreateScrapBucket(stack, {});
+const myBucket = CreateScrapBucket(stack, "scrapBucket");
 
 const props: S3ToLambdaProps = {
   lambdaFunctionProps: {
     code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler'
   },
   existingBucketObj: myBucket
@@ -37,5 +39,7 @@ const props: S3ToLambdaProps = {
 
 new S3ToLambda(stack, 'test-s3-lambda', props);
 
-suppressAutoDeleteHandlerWarnings(stack);
-app.synth();
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

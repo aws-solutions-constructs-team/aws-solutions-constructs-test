@@ -16,7 +16,9 @@ import { App, Stack } from "aws-cdk-lib";
 import { LambdaToElasticachememcached, LambdaToElasticachememcachedProps } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 // import * as ec2 from '@aws-cdk/aws-ec2';
-import { generateIntegStackName, getTestVpc, CreateTestCache, addCfnSuppressRules, buildSecurityGroup } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, getTestVpc, CreateTestCache, addCfnSuppressRules, buildSecurityGroup, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 // Setup
 const app = new App();
@@ -28,7 +30,7 @@ const testVpc = getTestVpc(stack, false);
 const testSG = buildSecurityGroup(stack, 'test-sg', { vpc: testVpc }, [], []);
 
 const testFunction = new lambda.Function(stack, 'test-function', {
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler',
   code: lambda.Code.fromAsset(`${__dirname}/lambda`),
   vpc: testVpc,
@@ -46,7 +48,11 @@ const props: LambdaToElasticachememcachedProps = {
   existingCache: testCache,
 };
 
-new LambdaToElasticachememcached(stack, 'test', props);
+new LambdaToElasticachememcached(stack, generateIntegStackName(__filename), props);
+
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

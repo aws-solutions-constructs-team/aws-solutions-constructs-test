@@ -14,23 +14,21 @@
 /// !cdk-integ *
 import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { S3ToStepfunctions, S3ToStepfunctionsProps } from "../lib";
-import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import * as defaults from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 const app = new App();
 const stack = new Stack(app, defaults.generateIntegStackName(__filename));
 stack.node.setContext("@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy", true);
 
-const existingBucket = defaults.CreateScrapBucket(stack, {
+const existingBucket = defaults.CreateScrapBucket(stack, "scrapBucket", {
   eventBridgeEnabled: true
 });
-
-const startState = new stepfunctions.Pass(stack, 'StartState');
 
 const props: S3ToStepfunctionsProps = {
   existingBucketObj: existingBucket,
   stateMachineProps: {
-    definition: startState
+    definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 's3stp-test')
   },
   logGroupProps: {
     removalPolicy: RemovalPolicy.DESTROY,
@@ -41,6 +39,8 @@ const props: S3ToStepfunctionsProps = {
 new S3ToStepfunctions(stack, 'test-s3-stepfunctions-pre-existing-bucket-construct', props);
 
 defaults.addCfnNagS3BucketNotificationRulesToSuppress(stack, 'BucketNotificationsHandler050a0587b7544547bf325f094a3db834');
-defaults.suppressAutoDeleteHandlerWarnings(stack);
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

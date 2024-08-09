@@ -16,7 +16,8 @@ import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { LambdaToS3, LambdaToS3Props } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
-import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -25,7 +26,7 @@ stack.templateOptions.description = 'Integration Test for aws-lambda-s3';
 
 // Definitions
 const lambdaFunctionProps = {
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler',
   code: lambda.Code.fromAsset(`${__dirname}/lambda`)
 };
@@ -35,11 +36,19 @@ const func = defaults.deployLambdaFunction(stack, lambdaFunctionProps);
 const props: LambdaToS3Props = {
   existingLambdaObj: func,
   bucketProps: {
+    autoDeleteObjects: true,
+    removalPolicy: RemovalPolicy.DESTROY,
+  },
+  loggingBucketProps: {
+    autoDeleteObjects: true,
     removalPolicy: RemovalPolicy.DESTROY,
   }
 };
 
 new LambdaToS3(stack, 'test-lambda-s3', props);
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

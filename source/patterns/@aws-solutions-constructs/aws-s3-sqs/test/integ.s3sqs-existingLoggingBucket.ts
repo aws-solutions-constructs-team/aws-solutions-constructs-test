@@ -16,13 +16,14 @@ import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { S3ToSqs, S3ToSqsProps } from "../lib";
 import * as defaults from '@aws-solutions-constructs/core';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 const app = new App();
 
 const stack = new Stack(app, generateIntegStackName(__filename));
 stack.node.setContext("@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy", true);
 
-const scrapLogBucket = defaults.CreateScrapBucket(stack);
+const scrapLogBucket = defaults.CreateScrapBucket(stack, "scrapBucket");
 
 // Currently there is no way to customize the logging bucket, so this
 // test will leave a bucket behind
@@ -33,7 +34,9 @@ const props: S3ToSqsProps = {
     autoDeleteObjects: true
   }
 };
-defaults.suppressAutoDeleteHandlerWarnings(stack);
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
 
 new S3ToSqs(stack, 'test-s3-sqs-temp', props);
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

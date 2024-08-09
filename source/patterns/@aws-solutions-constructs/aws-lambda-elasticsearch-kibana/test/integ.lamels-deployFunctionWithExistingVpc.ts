@@ -11,18 +11,22 @@
  *  and limitations under the License.
  */
 
+/*
+ * This test is incompatible with integ-runner in some way. In order to complete
+ * the transition, it's disabled and we will dig deeper into it in the future
+ */
+
 /// !cdk-integ *
-import { App, Stack } from "aws-cdk-lib";
+import { App, Aws, Stack } from "aws-cdk-lib";
 import { LambdaToElasticSearchAndKibana } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import { suppressCustomHandlerCfnNagWarnings } from "@aws-solutions-constructs/core";
 
 const app = new App();
 const stack = new Stack(app, defaults.generateIntegStackName(__filename), {
-  env: {
-    region: process.env.CDK_DEFAULT_REGION,
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-  }
+  env: { account: Aws.ACCOUNT_ID, region: 'us-east-1' },
 });
 
 // Create VPC
@@ -30,15 +34,18 @@ const vpc = defaults.getTestVpc(stack);
 
 const lambdaProps: lambda.FunctionProps = {
   code: lambda.Code.fromAsset(`lambda`),
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler',
 };
 
 new LambdaToElasticSearchAndKibana(stack, 'test-lambda-elasticsearch-kibana4', {
   lambdaFunctionProps: lambdaProps,
-  domainName: "deploytestwithexistingvpc",
+  domainName: defaults.CreateShortUniqueTestName("dmn"),
   existingVpc: vpc
 });
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

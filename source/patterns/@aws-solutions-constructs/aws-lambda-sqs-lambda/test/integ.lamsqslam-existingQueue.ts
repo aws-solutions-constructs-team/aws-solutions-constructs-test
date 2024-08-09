@@ -17,6 +17,7 @@ import { LambdaToSqsToLambda, LambdaToSqsToLambdaProps } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -28,13 +29,13 @@ const buildQueueResponse = defaults.buildQueue(stack, 'existing-sqs-queue', {});
 
 const props: LambdaToSqsToLambdaProps = {
   producerLambdaFunctionProps: {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda/producer-function`)
   },
   existingQueueObj: buildQueueResponse.queue,
   consumerLambdaFunctionProps: {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda/consumer-function`)
   }
@@ -43,4 +44,6 @@ const props: LambdaToSqsToLambdaProps = {
 new LambdaToSqsToLambda(stack, 'test-lambda-sqs-lambda', props);
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

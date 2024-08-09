@@ -17,6 +17,7 @@ import {LambdaToSsmstringparameter, LambdaToSsmstringparameterProps} from '../li
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as defaults from '@aws-solutions-constructs/core';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -35,7 +36,7 @@ const vpc = defaults.buildVpc(stack, {
 // Definitions
 const props: LambdaToSsmstringparameterProps = {
   lambdaFunctionProps: {
-    runtime: lambda.Runtime.NODEJS_16_X,
+    runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
     handler: 'index.handler',
     code: lambda.Code.fromAsset(`${__dirname}/lambda`)
   },
@@ -45,5 +46,9 @@ const props: LambdaToSsmstringparameterProps = {
 
 new LambdaToSsmstringparameter(stack, 'test-lambda-ssmstringparameter', props);
 
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
+
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

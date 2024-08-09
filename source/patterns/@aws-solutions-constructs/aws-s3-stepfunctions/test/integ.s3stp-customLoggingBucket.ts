@@ -12,22 +12,21 @@
  */
 
 /// !cdk-integ *
-import { App, Stack, RemovalPolicy } from "aws-cdk-lib";
-import { BucketEncryption } from "aws-cdk-lib/aws-s3";
+import { App, Stack, RemovalPolicy, Duration } from "aws-cdk-lib";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { S3ToStepfunctions } from "../lib";
-import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
-import { generateIntegStackName, suppressAutoDeleteHandlerWarnings } from '@aws-solutions-constructs/core';
+import * as defaults from '@aws-solutions-constructs/core';
+import { generateIntegStackName, suppressCustomHandlerCfnNagWarnings } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 const app = new App();
 
 // Empty arguments
 const stack = new Stack(app, generateIntegStackName(__filename));
 
-const startState = new stepfunctions.Pass(stack, 'StartState');
-
 new S3ToStepfunctions(stack, 'test-s3-stepfunctions', {
   stateMachineProps: {
-    definition: startState
+    definitionBody: defaults.CreateTestStateMachineDefinitionBody(stack, 's3stp-test')
   },
   bucketProps: {
     removalPolicy: RemovalPolicy.DESTROY,
@@ -36,13 +35,22 @@ new S3ToStepfunctions(stack, 'test-s3-stepfunctions', {
   loggingBucketProps: {
     removalPolicy: RemovalPolicy.DESTROY,
     autoDeleteObjects: true,
-    encryption: BucketEncryption.S3_MANAGED,
-    versioned: true
+    // This functionality is inconsequential, it just confirms
+    // that these props continue to be utilized
+    lifecycleRules: [{
+      enabled: true,
+      transitions: [{
+        storageClass: s3.StorageClass.GLACIER,
+        transitionAfter: Duration.days(7)
+      }]
+    }]
   },
   logGroupProps: {
     removalPolicy: RemovalPolicy.DESTROY,
   }
 });
 
-suppressAutoDeleteHandlerWarnings(stack);
-app.synth();
+suppressCustomHandlerCfnNagWarnings(stack, 'Custom::S3AutoDeleteObjectsCustomResourceProvider');
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

@@ -18,6 +18,7 @@ import * as defaults from '@aws-solutions-constructs/core';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { getSagemakerModel } from './test-helper';
 import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -26,7 +27,7 @@ stack.templateOptions.description = 'Integration Test for aws-lambda-sagemakeren
 
 const getSagemakerModelResponse = getSagemakerModel(stack);
 
-const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, {
+const deploySagemakerEndpointResponse = defaults.deploySagemakerEndpoint(stack, 'test', {
   modelProps: {
     primaryContainer: {
       image: getSagemakerModelResponse.mapping.findInMap(Stack.of(stack).region, "containerArn"),
@@ -55,4 +56,6 @@ const lambdaToSagemakerConstruct = new LambdaToSagemakerEndpoint(stack, 'test-la
 lambdaToSagemakerConstruct.node.addDependency(getSagemakerModelResponse.asset);
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

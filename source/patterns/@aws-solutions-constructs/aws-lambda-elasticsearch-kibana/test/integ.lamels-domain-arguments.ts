@@ -15,7 +15,9 @@
 import { App, Stack } from "aws-cdk-lib";
 import { LambdaToElasticSearchAndKibana } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { generateIntegStackName } from '@aws-solutions-constructs/core';
+import { generateIntegStackName, CreateShortUniqueTestName } from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
+import * as defaults from '@aws-solutions-constructs/core';
 
 // Setup
 const app = new App();
@@ -23,18 +25,16 @@ const stack = new Stack(app, generateIntegStackName(__filename));
 
 const lambdaProps: lambda.FunctionProps = {
   code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler'
 };
 
-const esDomain = 'domain-args-7c94';
-const cognitoDomain = 'domain-args-cogn-7c94';
-
 new LambdaToElasticSearchAndKibana(stack, 'test-lambda-elasticsearch-kibana2', {
   lambdaFunctionProps: lambdaProps,
-  domainName: esDomain,
-  cognitoDomainName: cognitoDomain
+  domainName: CreateShortUniqueTestName("dmn"),
 });
 
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });

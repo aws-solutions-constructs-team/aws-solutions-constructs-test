@@ -25,7 +25,7 @@ import { overrideProps, addCfnSuppressRules } from './utils';
 import { buildSecurityGroup } from "./security-group-helper";
 // Note: To ensure CDKv2 compatibility, keep the import statement for Construct separate
 import { Construct, IConstruct } from 'constructs';
-
+import * as defaults from '../index';
 export interface BuildLambdaFunctionProps {
   /**
    * Existing instance of Lambda Function object, Providing both this and lambdaFunctionProps will cause an error.
@@ -154,7 +154,7 @@ export function deployLambdaFunction(scope: Construct,
 
   const lambdafunction = new lambda.Function(scope, functionId, finalLambdaFunctionProps);
 
-  if (lambdaFunctionProps.runtime === lambda.Runtime.NODEJS_16_X) {
+  if (lambdaFunctionProps.runtime === defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME) {
     lambdafunction.addEnvironment('AWS_NODEJS_CONNECTION_REUSE_ENABLED', '1', { removeInEdge: true });
   }
 
@@ -179,13 +179,15 @@ export function deployLambdaFunction(scope: Construct,
     // Find the X-Ray IAM Policy
     const cfnLambdafunctionDefPolicy = lambdafunction.role?.node.tryFindChild('DefaultPolicy')?.node.findChild('Resource') as iam.CfnPolicy;
 
-    // Add the CFN NAG suppress to allow for "Resource": "*" for AWS X-Ray
-    addCfnSuppressRules(cfnLambdafunctionDefPolicy, [
-      {
-        id: 'W12',
-        reason: `Lambda needs the following minimum required permissions to send trace data to X-Ray and access ENIs in a VPC.`
-      }
-    ]);
+    if (cfnLambdafunctionDefPolicy) {
+      // Add the CFN NAG suppress to allow for "Resource": "*" for AWS X-Ray
+      addCfnSuppressRules(cfnLambdafunctionDefPolicy, [
+        {
+          id: 'W12',
+          reason: `Lambda needs the following minimum required permissions to send trace data to X-Ray and access ENIs in a VPC.`
+        }
+      ]);
+    }
   }
 
   return lambdafunction;

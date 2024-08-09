@@ -16,6 +16,7 @@ import { App, Stack } from "aws-cdk-lib";
 import { LambdaToElasticSearchAndKibana } from "../lib";
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as defaults from '@aws-solutions-constructs/core';
+import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
 // Setup
 const app = new App();
@@ -23,7 +24,7 @@ const stack = new Stack(app, defaults.generateIntegStackName(__filename), {});
 
 const lambdaProps: lambda.FunctionProps = {
   code: lambda.Code.fromAsset(`${__dirname}/lambda`),
-  runtime: lambda.Runtime.NODEJS_16_X,
+  runtime: defaults.COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
   handler: 'index.handler',
 };
 
@@ -38,7 +39,7 @@ const esDomainProps = {
 
 new LambdaToElasticSearchAndKibana(stack, 'test-lambda-elasticsearch-kibana', {
   lambdaFunctionProps: lambdaProps,
-  domainName: "disabledzoneawareness",
+  domainName: defaults.CreateShortUniqueTestName("dmn"),
   esDomainProps,
   deployVpc: true,
   vpcProps: {
@@ -46,5 +47,9 @@ new LambdaToElasticSearchAndKibana(stack, 'test-lambda-elasticsearch-kibana', {
   }
 });
 
+defaults.suppressCustomHandlerCfnNagWarnings(stack, 'Custom::VpcRestrictDefaultSGCustomResourceProvider');
+
 // Synth
-app.synth();
+new IntegTest(stack, 'Integ', { testCases: [
+  stack
+] });
