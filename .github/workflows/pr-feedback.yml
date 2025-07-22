@@ -1,7 +1,7 @@
 name: PR Feedback AutoBuild
 on: pull_request
 jobs:
-  Hello-World-Job:
+  github-autobuild-action:
     runs-on:
       - codebuild-githubautobuild-for-cdk-v2-${{ github.run_id }}-${{ github.run_attempt }}
         buildspec-override:true
