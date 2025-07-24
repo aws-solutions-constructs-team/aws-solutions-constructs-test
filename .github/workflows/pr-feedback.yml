@@ -11,4 +11,3 @@ jobs:
       - run: echo "===== pr-feedback.yml"
       - run: ls
       - run: pwd
-      - run: docker ps
