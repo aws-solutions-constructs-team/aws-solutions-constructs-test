@@ -281,6 +281,7 @@ export class SnsToSqs extends Construct {
 
     // If neither are set, use the feature flag choose the functionality
     if (!useCurrentInterface && !useDeprecatedInterface) {
+      defaults.printWarning("This does not really help");
       defaults.printWarning('Unable to determine whether to use current or deprecated Key functionality, using Feature Flag SNS_SUBSCRIPTIONS_SQS_DECRYPTION_POLICY to decide');
       if (FeatureFlags.of(scope).isEnabled(SNS_SUBSCRIPTIONS_SQS_DECRYPTION_POLICY)) {
         useCurrentInterface = true;
