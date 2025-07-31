@@ -4,7 +4,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [2.92.0](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/compare/v2.14.0...v2.92.0) (2025-07-31)
 
-
 ### Features
 
 * **apigateway:** accept MethodResponses along with IntegrationResponses ([#1146](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/issues/1146)) ([c351953](https://github.com/aws-solutions-constructs-team/aws-solutions-constructs-test/commit/c35195335b530bde8e782bdc2ded8003060c9650))
